@@ -33,23 +33,23 @@ class UserService {
 
   Login = async ({ username, password }) => {
     const foundAccount = await AccountModel.findOne({ email: username });
-    if (!foundAccount) throw new AuthFailureError("account not found");
+    if (!foundAccount) throw new AuthFailureError("Tài khoản chưa được đăng ký");
 
     const matchAccount = await bcrypt.compare(password, foundAccount.password);
-    if (!matchAccount) throw new AuthFailureError("wrong username or password");
+    if (!matchAccount) throw new AuthFailureError("Tài khoản hoặc mật khẩu không chính xác");
 
     const tokens = await createTokenPair({
       userId: foundAccount._id,
       email: foundAccount.email,
     });
 
-    if (!tokens) throw new BadRequestError("can not create tokens");
+    if (!tokens) throw new BadRequestError("Không thể tạo Tokens");
 
     const keyStore = await keyTokenService.createKeys({
       user: foundAccount,
       refreshToken: tokens.refreshToken,
     });
-    if (!keyStore) throw new AuthFailureError("can not create keytoken");
+    if (!keyStore) throw new AuthFailureError("Không thể tạo Keytoken");
 
     return {
       user: getInfoData({
@@ -65,7 +65,7 @@ class UserService {
 
   Register = async ({ name, email, password }) => {
     const holderAccount = await AccountModel.findOne({ email: email });
-    if (holderAccount) throw new AuthFailureError("account is registed");
+    if (holderAccount) throw new AuthFailureError("Tài khoản đã tồn tại trong hệ thống");
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -75,7 +75,7 @@ class UserService {
       password: hashedPassword,
     });
 
-    if (!newAccount) throw new AuthFailureError("can not create account");
+    if (!newAccount) throw new AuthFailureError("Không thể tạo tài khoản");
 
     return {
       user: getInfoData({
@@ -93,7 +93,7 @@ class UserService {
     const holderAccount = await AccountModel.findOne({
       _id: convertToObjectIdMongose(id),
     });
-    if (!holderAccount) throw new AuthFailureError("can not find account");
+    if (!holderAccount) throw new AuthFailureError("Không tìm được tài khoản");
 
     Object.assign(holderAccount, data);
 
@@ -132,7 +132,7 @@ class UserService {
     const keyStore = await keyTokenService.findKeyTokenByRefreshToken(
       refreshToken
     );
-    if (!keyStore) throw new AuthFailureError("can not find key store");
+    if (!keyStore) throw new AuthFailureError("Không tìm thấy Key store");
 
     if (keyStore.refreshTokenUsed.includes(refreshToken)) {
       await keyTokenService.removeKeyTokenByUserId(userId);

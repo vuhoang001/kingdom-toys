@@ -1,3 +1,4 @@
+const { default: convertStatus } = require("../helpers/convertOrderStatus");
 const notificationModel = require("../models/notification.model");
 const { BadRequestError } = require("../response/error.response");
 
@@ -7,7 +8,7 @@ class NotificationService {
       throw new BadRequestError("Thiếu dữ liệu để tạo thông báo");
     }
 
-    const message = `Đơn hàng #${orderId} đã được cập nhật sang trạng thái ${status}`;
+    const message = `Đơn hàng #${orderId} đã được cập nhật sang trạng thái ${convertStatus(status)}`;
 
     const created = await notificationModel.create({
       user: userId,
