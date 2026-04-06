@@ -23,13 +23,46 @@ const ORDER_ITEM_GENERATORS = {
 };
 
 class OrderService {
-  UpdateStatusOrder = async (orderId) => {
+  UpdateStatusOrder = async (orderId, status) => {
     const holderOrder = await orderModel.findOne({ _id: orderId });
     if (!holderOrder) throw new BadRequestError("Không tìm thấy đơn hàng");
 
-    holderOrder.status = ORDERSTATUS.CONFIRMED;
+    // Giữ tương thích ngược: nếu không truyền status thì mặc định confirmed
+    const nextStatus = status || ORDERSTATUS.CONFIRMED;
+    holderOrder.status = nextStatus;
     await holderOrder.save();
-    return "Success";
+    return {
+      message: "Success",
+      orderId: String(holderOrder._id),
+      status: holderOrder.status,
+      userId: String(holderOrder.user),
+    };
+  };
+
+  /**
+   * Mô phỏng xử lý sau ZaloPay callback: cập nhật trạng thái đơn (paid).
+   * Webhook thật: verify chữ ký ZaloPay, map trans_status → status DB, rồi emit socket.
+   */
+  mockZaloPayCallbackUpdate = async ({ orderId, userId }) => {
+    if (!orderId || !userId) {
+      throw new BadRequestError("Thiếu orderId hoặc userId");
+    }
+
+    const holderOrder = await orderModel.findOne({ _id: orderId });
+    if (!holderOrder) throw new BadRequestError("Không tìm thấy đơn hàng");
+
+    if (String(holderOrder.user) !== String(userId)) {
+      throw new BadRequestError("Đơn hàng không thuộc khách hàng");
+    }
+
+    holderOrder.status = ORDERSTATUS.PAID;
+    await holderOrder.save();
+
+    return {
+      orderId: String(holderOrder._id),
+      status: holderOrder.status,
+      userId: String(userId),
+    };
   };
 
   CancelOrder = async (orderId) => {

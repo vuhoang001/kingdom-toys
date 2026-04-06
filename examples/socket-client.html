@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Ví dụ Socket.IO — order_updated</title>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+  </head>
+  <body>
+    <h1>Realtime đơn hàng (demo)</h1>
+    <p>Mở console (F12). Điền SERVER_URL, USER_ID (trùng userId trong JWT) và ACCESS_TOKEN.</p>
+    <pre id="log"></pre>
+
+    <script>
+      // Đổi cho đúng môi trường (cùng origin hoặc CORS đã mở SOCKET_CORS_ORIGIN)
+      const SERVER_URL = "http://localhost:3000";
+      // Trùng với trường userId trong payload JWT
+      const USER_ID = "PASTE_USER_ID_HERE";
+      // JWT ký bằng ACCESS_TOKEN trong .env
+      const ACCESS_TOKEN = "PASTE_YOUR_JWT_HERE";
+
+      const logEl = document.getElementById("log");
+      function log(line) {
+        logEl.textContent += line + "\n";
+        console.log(line);
+      }
+
+      const socket = io(SERVER_URL, {
+        auth: { token: ACCESS_TOKEN },
+        // Reconnect: mặc định bật; tùy chỉnh để UX rõ ràng hơn
+        reconnection: true,
+        reconnectionAttempts: Infinity,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+      });
+
+      socket.on("connect", () => {
+        log("connected: " + socket.id);
+        // Emit join sau reconnect — server vẫn join room khi connection; join để đồng bộ contract API
+        socket.emit("join", { userId: USER_ID }, (ack) => {
+          if (ack && ack.ok) log("join ack: " + JSON.stringify(ack));
+        });
+      });
+
+      socket.on("connected", (data) => {
+        log("server connected event: " + JSON.stringify(data));
+      });
+
+      socket.on("order_updated", (payload) => {
+        log("order_updated: " + JSON.stringify(payload));
+      });
+
+      socket.on("join_error", (err) => {
+        log("join_error: " + JSON.stringify(err));
+      });
+
+      socket.on("connect_error", (err) => {
+        log("connect_error: " + err.message);
+      });
+
+      socket.on("disconnect", (reason) => {
+        log("disconnect: " + reason);
+      });
+    </script>
+  </body>
+</html>

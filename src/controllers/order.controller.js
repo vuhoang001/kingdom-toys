@@ -1,5 +1,7 @@
 const orderService = require("../services/order.service");
 const { SuccessResponse } = require("../response/success.response");
+const { emitOrderUpdatedToUser } = require("../socket/socket");
+const notificationService = require("../services/notification.service");
 
 class OrderController {
   Checkout = async (req, res) => {
@@ -12,10 +14,22 @@ class OrderController {
 
   UpdateStatusOrder = async (req, res) => {
     const orderId = req.params.id;
+    const { status } = req.body;
+    const updatedOrder = await orderService.UpdateStatusOrder(orderId, status);
+
+    emitOrderUpdatedToUser(updatedOrder.userId, {
+      orderId: updatedOrder.orderId,
+      status: updatedOrder.status,
+    });
+    await notificationService.createOrderUpdatedNotification({
+      userId: updatedOrder.userId,
+      orderId: updatedOrder.orderId,
+      status: updatedOrder.status,
+    });
 
     new SuccessResponse({
       message: "Update success",
-      metadata: await orderService.UpdateStatusOrder(orderId),
+      metadata: updatedOrder,
     }).send(res);
   };
 
