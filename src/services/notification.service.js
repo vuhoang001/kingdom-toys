@@ -1,4 +1,5 @@
-const { default: convertStatus } = require("../helpers/convertOrderStatus");
+const convertOrderStatus = require("../helpers/convertOrderStatus");
+const convertPaymentStatus = require("../helpers/convertPaymentStatus");
 const notificationModel = require("../models/notification.model");
 const { BadRequestError } = require("../response/error.response");
 
@@ -8,7 +9,7 @@ class NotificationService {
       throw new BadRequestError("Thiếu dữ liệu để tạo thông báo");
     }
 
-    const message = `Đơn hàng #${orderId} đã được cập nhật sang trạng thái ${convertStatus(status)}`;
+    const message = `Đơn hàng #${orderId} đã được cập nhật sang trạng thái ${convertOrderStatus(status)}`;
 
     const created = await notificationModel.create({
       user: userId,
@@ -18,6 +19,40 @@ class NotificationService {
       data: {
         orderId,
         status,
+      },
+    });
+
+    return created;
+  };
+
+  /** Thanh toán (ZaloPay) — tách nội dung khỏi thông báo cập nhật trạng thái đơn */
+  createPaymentUpdatedNotification = async ({
+    userId,
+    orderId,
+    paymentStatus,
+    orderStatus,
+  }) => {
+    if (!userId || !orderId || !paymentStatus) {
+      throw new BadRequestError("Thiếu dữ liệu để tạo thông báo thanh toán");
+    }
+
+    const payLabel = convertPaymentStatus(paymentStatus);
+    const orderLabel = orderStatus
+      ? convertOrderStatus(orderStatus)
+      : null;
+    const message = orderLabel
+      ? `Đơn #${orderId}: ${payLabel}. Trạng thái đơn: ${orderLabel}.`
+      : `Đơn #${orderId}: ${payLabel}.`;
+
+    const created = await notificationModel.create({
+      user: userId,
+      type: "payment_updated",
+      title: "Cập nhật thanh toán",
+      message,
+      data: {
+        orderId,
+        paymentStatus,
+        ...(orderStatus != null ? { status: orderStatus } : {}),
       },
     });
 

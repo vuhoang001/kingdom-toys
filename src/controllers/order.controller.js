@@ -20,6 +20,7 @@ class OrderController {
     emitOrderUpdatedToUser(updatedOrder.userId, {
       orderId: updatedOrder.orderId,
       status: updatedOrder.status,
+      paymentStatus: updatedOrder.paymentStatus,
     });
     await notificationService.createOrderUpdatedNotification({
       userId: updatedOrder.userId,

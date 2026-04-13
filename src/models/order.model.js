@@ -1,5 +1,5 @@
 const { Schema, model, Types, mongo, default: mongoose } = require("mongoose");
-const { ORDERSTATUS, PAYMENT_METHOD } = require("../utils/enum");
+const { ORDERSTATUS, PAYMENT_METHOD, PAYMENT_STATUS } = require("../utils/enum");
 
 const DOCUMENT_NAME = "Order";
 const COLLECTION_NAME = "Orders";
@@ -38,13 +38,13 @@ const OrderSchema = new Schema(
     },
     status: {
       type: String,
-      enum: [
-        ORDERSTATUS.PAID,
-        ORDERSTATUS.PENDING,
-        ORDERSTATUS.CANCELLED,
-        ORDERSTATUS.CONFIRMED,
-      ],
+      enum: Object.values(ORDERSTATUS),
       default: ORDERSTATUS.PENDING,
+    },
+    paymentStatus: {
+      type: String,
+      enum: Object.values(PAYMENT_STATUS),
+      default: PAYMENT_STATUS.PENDING,
     },
     isDeleted: {
       type: Boolean,

@@ -1,5 +1,6 @@
 const orderModel = require("../models/order.model");
-const { ORDERSTATUS } = require("../utils/enum");
+const { PAYMENT_STATUS } = require("../utils/enum");
+const { BadRequestError } = require("../response/error.response");
 
 class PaymentService {
   CallBack = async (payload) => {
@@ -8,7 +9,7 @@ class PaymentService {
     const orderData = await orderModel.findOne({ _id: order });
     if (!orderData) throw new BadRequestError("Order not found");
 
-    orderData.status = ORDERSTATUS.PAID;
+    orderData.paymentStatus = PAYMENT_STATUS.PAID;
     await orderData.save();
   };
 }

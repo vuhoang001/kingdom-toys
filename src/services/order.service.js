@@ -1,7 +1,7 @@
 const orderModel = require("../models/order.model");
 const productModel = require("../models/product.model");
 const { BadRequestError } = require("../response/error.response");
-const { ORDERSTATUS } = require("../utils/enum");
+const { ORDERSTATUS, PAYMENT_METHOD, PAYMENT_STATUS } = require("../utils/enum");
 const couponModel = require("../models/coupon.model");
 
 const { parseFilterString } = require("../utils");
@@ -35,13 +35,15 @@ class OrderService {
       message: "Success",
       orderId: String(holderOrder._id),
       status: holderOrder.status,
+      paymentStatus: holderOrder.paymentStatus,
       userId: String(holderOrder.user),
     };
   };
 
   /**
-   * Mô phỏng xử lý sau ZaloPay callback: cập nhật trạng thái đơn (paid).
-   * Webhook thật: verify chữ ký ZaloPay, map trans_status → status DB, rồi emit socket.
+   * Mô phỏng xử lý sau ZaloPay callback: chỉ cập nhật `paymentStatus` (thanh toán),
+   * không gán `status` đơn hàng = paid — trạng thái đơn (pending/confirmed/...) do nghiệp vụ khác.
+   * Webhook thật: verify chữ ký ZaloPay, map trans_status → PAYMENT_STATUS.
    */
   mockZaloPayCallbackUpdate = async ({ orderId, userId }) => {
     if (!orderId || !userId) {
@@ -55,12 +57,17 @@ class OrderService {
       throw new BadRequestError("Đơn hàng không thuộc khách hàng");
     }
 
-    holderOrder.status = ORDERSTATUS.PAID;
+    if (holderOrder.paymentMethod !== PAYMENT_METHOD.ZALO) {
+      throw new BadRequestError("Đơn không dùng thanh toán ZaloPay");
+    }
+
+    holderOrder.paymentStatus = PAYMENT_STATUS.PAID;
     await holderOrder.save();
 
     return {
       orderId: String(holderOrder._id),
       status: holderOrder.status,
+      paymentStatus: holderOrder.paymentStatus,
       userId: String(userId),
     };
   };

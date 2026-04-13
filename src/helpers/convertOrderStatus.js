@@ -1,4 +1,4 @@
-export default function convertStatus(status) {
+function convertOrderStatus(status) {
   switch (status) {
     case "pending":
       return "Chờ xử lý";
@@ -18,3 +18,5 @@ export default function convertStatus(status) {
       return "Không xác định";
   }
 }
+
+module.exports = convertOrderStatus;

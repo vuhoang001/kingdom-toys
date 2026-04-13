@@ -24,6 +24,14 @@ const PAYMENT_METHOD = {
   ZALO: "zalo",
 };
 
+/** Trạng thái thanh toán (ZaloPay / online) — tách khỏi vòng đời đơn hàng `ORDERSTATUS` */
+const PAYMENT_STATUS = {
+  PENDING: "pending",
+  PAID: "paid",
+  FAILED: "failed",
+  REFUNDED: "refunded",
+};
+
 const ROLE = {
   ADMIN: "A",
   CLIENT: "C",
@@ -33,5 +41,6 @@ module.exports = {
   DISCOUNTTYPE,
   ORDERSTATUS,
   PAYMENT_METHOD,
+  PAYMENT_STATUS,
   ROLE,
 };

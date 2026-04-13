@@ -37,6 +37,10 @@ const notificationSchema = new Schema(
         type: String,
         trim: true,
       },
+      paymentStatus: {
+        type: String,
+        trim: true,
+      },
     },
     isRead: {
       type: Boolean,

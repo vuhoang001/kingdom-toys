@@ -19,16 +19,22 @@ class ZaloPayController {
     emitOrderUpdatedToUser(updated.userId, {
       orderId: updated.orderId,
       status: updated.status,
+      paymentStatus: updated.paymentStatus,
     });
-    await notificationService.createOrderUpdatedNotification({
+    await notificationService.createPaymentUpdatedNotification({
       userId: updated.userId,
       orderId: updated.orderId,
-      status: updated.status,
+      paymentStatus: updated.paymentStatus,
+      orderStatus: updated.status,
     });
 
     new SuccessResponse({
       message: "callback processed",
-      metadata: { orderId: updated.orderId, status: updated.status },
+      metadata: {
+        orderId: updated.orderId,
+        status: updated.status,
+        paymentStatus: updated.paymentStatus,
+      },
     }).send(res);
   };
 }
