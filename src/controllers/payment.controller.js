@@ -9,4 +9,4 @@ class PaymentController {
     }).send(res);
   };
 }
-module.exports = new PaymentController();
+module.exports = new PaymentController(); 

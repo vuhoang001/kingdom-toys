@@ -17,7 +17,7 @@ class PaymentHandler {
     const { orderType } = orderInput;
 
     if (orderType == "Cart") {
- 
+
       const cart = await cartModel.findOne({ user: userId });
       if (cart) await cart.deleteOne();
     }
@@ -103,7 +103,7 @@ class ZaloPayment extends PaymentHandler {
       const result = await axios.post(configs.ZALO_PAY.endpoint, null, {
         params: order,
       });
-
+      console.log(result);
       return result.data;
     } catch (error) {
       throw new BadRequestError("Payment failed: ", error);
