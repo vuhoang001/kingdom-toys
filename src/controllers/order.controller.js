@@ -12,34 +12,25 @@ class OrderController {
     }).send(res);
   };
 
-  UpdateStatusOrder = async (req, res) => {
-    const orderId = req.params.id;
+  UpdateStatus = async (req, res) => {
+    const { id } = req.params;
     const { status } = req.body;
-    const updatedOrder = await orderService.UpdateStatusOrder(orderId, status);
+    const updated = await orderService.UpdateStatus(id, status, req.user?.userId);
 
-    emitOrderUpdatedToUser(updatedOrder.userId, {
-      orderId: updatedOrder.orderId,
-      status: updatedOrder.status,
-      paymentStatus: updatedOrder.paymentStatus,
+    emitOrderUpdatedToUser(updated.userId, {
+      orderId: updated.orderId,
+      status: updated.status,
+      paymentStatus: updated.paymentStatus,
     });
     await notificationService.createOrderUpdatedNotification({
-      userId: updatedOrder.userId,
-      orderId: updatedOrder.orderId,
-      status: updatedOrder.status,
+      userId: updated.userId,
+      orderId: updated.orderId,
+      status: updated.status,
     });
 
     new SuccessResponse({
-      message: "Update success",
-      metadata: updatedOrder,
-    }).send(res);
-  };
-
-  CancelOrder = async (req, res) => {
-    const orderId = req.params.id;
-
-    new SuccessResponse({
-      message: "Cancel success",
-      metadata: await orderService.CancelOrder(orderId),
+      message: "Update status success",
+      metadata: updated,
     }).send(res);
   };
 

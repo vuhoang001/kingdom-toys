@@ -1,12 +1,13 @@
-const { SuccessResponse } = require("../response/success.response");
 const paymentService = require("../services/payment.service");
 
 class PaymentController {
   CallBack = async (req, res) => {
-    new SuccessResponse({
-      message: "call back success",
-      metadata: await paymentService.CallBack(req.body),
-    }).send(res);
+    try {
+      await paymentService.CallBack(req.body);
+      return res.json({ return_code: 1, return_message: "success" });
+    } catch (error) {
+      return res.json({ return_code: 0, return_message: error.message });
+    }
   };
 }
-module.exports = new PaymentController(); 
+module.exports = new PaymentController();

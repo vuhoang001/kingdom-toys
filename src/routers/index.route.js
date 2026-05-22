@@ -18,5 +18,6 @@ router.use("/", require("./zalopay.route.js"));
 router.use("/", require("./notification.route.js"));
 router.use("/", require("./author.route.js"));
 
+router.use("/", require("./report.route.js"));
 router.use("/", require("./async.route.js"));
 module.exports = router;

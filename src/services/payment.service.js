@@ -1,12 +1,17 @@
+const CryptoJS = require("crypto-js");
 const orderModel = require("../models/order.model");
 const { PAYMENT_METHOD, PAYMENT_STATUS } = require("../utils/enum");
 const { BadRequestError } = require("../response/error.response");
 const { emitOrderUpdatedToUser } = require("../socket/socket");
 const notificationService = require("./notification.service");
+const { configs } = require("../configs");
 
 class PaymentService {
   CallBack = async (payload) => {
-    console.log("ZALOOOOOOOOOOOOOOOO", payload);
+    // Verify chữ ký MAC từ ZaloPay bằng key2
+    const mac = CryptoJS.HmacSHA256(payload.data, configs.ZALO_PAY.key2).toString();
+    if (mac !== payload.mac) throw new BadRequestError("Invalid MAC signature");
+
     // payload.data là JSON string do ZaloPay gửi về
     const dataStr = JSON.parse(payload.data);
     const { order } = JSON.parse(dataStr.embed_data);
@@ -16,6 +21,8 @@ class PaymentService {
     if (orderData.paymentMethod !== PAYMENT_METHOD.ZALO) {
       throw new BadRequestError("Order is not ZaloPay payment");
     }
+
+    if (orderData.paymentStatus === PAYMENT_STATUS.PAID) return;
 
     orderData.paymentStatus = PAYMENT_STATUS.PAID;
     await orderData.save();

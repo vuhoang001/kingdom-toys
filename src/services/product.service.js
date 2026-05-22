@@ -17,34 +17,34 @@ class ProductService {
     age = null,
     type = null
   ) => {
-    let baseFilter = {};
-    const searchStr = String(search).trim();
+    const andConditions = [];
 
+    const searchStr = String(search ?? "").trim();
     if (searchStr) {
-      baseFilter = {
+      andConditions.push({
         $or: [{ productName: { $regex: searchStr, $options: "i" } }],
-      };
+      });
     }
 
-    let priceFilter = parsePriceToFilter(price);
-    if (priceFilter) baseFilter = { ...baseFilter, ...priceFilter };
+    const priceFilter = parsePriceToFilter(price);
+    if (priceFilter) andConditions.push(priceFilter);
 
     if (genre) {
-      baseFilter.$or = [{ brand: genre }, { genre: genre }];
+      andConditions.push({ $or: [{ brand: genre }, { genre: genre }] });
     }
 
-    if (sex) baseFilter.sex = sex;
+    if (sex) andConditions.push({ sex });
 
     if (age) {
-      if (age.includes(":")) {
-        const [minAge, maxAge] = age.split(":").map(Number);
-        baseFilter.age = { $gte: minAge, $lte: maxAge };
+      if (String(age).includes(":")) {
+        const [minAge, maxAge] = String(age).split(":").map(Number);
+        andConditions.push({ age: { $gte: minAge, $lte: maxAge } });
       } else {
-        baseFilter.age = Number(age);
+        andConditions.push({ age: Number(age) });
       }
     }
 
-    console.log(baseFilter);
+    const baseFilter = andConditions.length ? { $and: andConditions } : {};
 
     const total = await productModel.countDocuments(baseFilter);
     const products = await productModel

@@ -22,17 +22,50 @@ const ORDER_ITEM_GENERATORS = {
     await generateOrderItemsFromProduct(payload.productId, payload.quantity),
 };
 
+// Các transition hợp lệ: key = trạng thái hiện tại, value = danh sách trạng thái tiếp theo cho phép
+const VALID_TRANSITIONS = {
+  [ORDERSTATUS.PENDING]:   [ORDERSTATUS.CONFIRMED, ORDERSTATUS.CANCELLED],
+  [ORDERSTATUS.CONFIRMED]: [ORDERSTATUS.SHIPPED,   ORDERSTATUS.CANCELLED],
+  [ORDERSTATUS.SHIPPED]:   [ORDERSTATUS.DELIVERED],
+  [ORDERSTATUS.DELIVERED]: [],
+  [ORDERSTATUS.CANCELLED]: [],
+  [ORDERSTATUS.DRAFT]:     [ORDERSTATUS.PENDING,   ORDERSTATUS.CANCELLED],
+};
+
 class OrderService {
-  UpdateStatusOrder = async (orderId, status) => {
+  /**
+   * Cập nhật trạng thái đơn hàng (bao gồm cả huỷ).
+   * @param {string} orderId
+   * @param {string} status  - trạng thái mới
+   * @param {string|null} requestingUserId - userId từ JWT; nếu có sẽ kiểm tra quyền sở hữu khi huỷ
+   */
+  UpdateStatus = async (orderId, status, requestingUserId = null) => {
+    if (!status) throw new BadRequestError("Thiếu trạng thái cần cập nhật");
+
     const holderOrder = await orderModel.findOne({ _id: orderId });
     if (!holderOrder) throw new BadRequestError("Không tìm thấy đơn hàng");
 
-    // Giữ tương thích ngược: nếu không truyền status thì mặc định confirmed
-    const nextStatus = status || ORDERSTATUS.CONFIRMED;
-    holderOrder.status = nextStatus;
+    if (!Object.values(ORDERSTATUS).includes(status)) {
+      throw new BadRequestError(`Trạng thái không hợp lệ: "${status}"`);
+    }
+
+    const allowed = VALID_TRANSITIONS[holderOrder.status] ?? [];
+    if (!allowed.includes(status)) {
+      throw new BadRequestError(
+        `Không thể chuyển từ "${holderOrder.status}" sang "${status}"`
+      );
+    }
+
+    // Khi huỷ: nếu có requestingUserId thì user tự huỷ → chỉ được huỷ đơn của mình
+    if (status === ORDERSTATUS.CANCELLED && requestingUserId) {
+      if (String(holderOrder.user) !== String(requestingUserId)) {
+        throw new BadRequestError("Bạn không có quyền huỷ đơn hàng này");
+      }
+    }
+
+    holderOrder.status = status;
     await holderOrder.save();
     return {
-      message: "Success",
       orderId: String(holderOrder._id),
       status: holderOrder.status,
       paymentStatus: holderOrder.paymentStatus,
@@ -72,13 +105,6 @@ class OrderService {
     };
   };
 
-  CancelOrder = async (orderId) => {
-    const holderOrder = await orderModel.findOne({ _id: orderId });
-    if (!holderOrder) throw new BadRequestError("Không tìm thấy giỏ hàng");
-    holderOrder.status = ORDERSTATUS.CANCELLED;
-    await holderOrder.save();
-    return "Suceess";
-  };
 
   Checkout = async (payload, userId) => {
     if (!payload.paymentMethod)
@@ -331,14 +357,9 @@ class OrderService {
     status = null,
     userId
   ) => {
-    let filterX = { user: userId };
-    if (search) {
-      let regex = { $regex: search, $options: "i" };
-    }
+    const filterX = { user: userId };
 
-    if (status) {
-      filterX.status = status;
-    }
+    if (status) filterX.status = status;
     const total = await orderModel.countDocuments(filterX);
     const rawOrders = await orderModel
       .find(filterX)

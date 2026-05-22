@@ -62,11 +62,26 @@ const parseFilterString = (filterString, search = null, searchFields = []) => {
 const parsePriceToFilter = (price) => {
   if (!price) return null;
 
-  const ranges = price.split(",");
+  const ranges = String(price).split(",");
   const orConditions = ranges.map((range) => {
-    const [min, max] = range.split(":").map(Number);
-    return { price: { $gte: min, $lte: max } };
-  });
+    if (!range.includes(":")) {
+      // Giá trị đơn → lọc giá tối đa (price <= value)
+      const max = Number(range);
+      return isNaN(max) ? null : { price: { $lte: max } };
+    }
+
+    const [rawMin, rawMax] = range.split(":");
+    const min = rawMin !== "" ? Number(rawMin) : null;
+    const max = rawMax !== "" ? Number(rawMax) : null;
+
+    const condition = {};
+    if (min !== null && !isNaN(min)) condition.$gte = min;
+    if (max !== null && !isNaN(max)) condition.$lte = max;
+
+    return Object.keys(condition).length ? { price: condition } : null;
+  }).filter(Boolean);
+
+  if (!orConditions.length) return null;
   return orConditions.length > 1 ? { $or: orConditions } : orConditions[0];
 };
 
