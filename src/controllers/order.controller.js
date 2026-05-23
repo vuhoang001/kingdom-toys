@@ -43,15 +43,17 @@ class OrderController {
   };
 
   GetOrder = async (req, res) => {
-    const { skip, limit, status, search, filter } = req.query;
+    const {
+      skip, limit, status, search, filter,
+      paymentStatus, paymentMethod, userId,
+      fromDate, toDate, minPrice, maxPrice,
+    } = req.query;
     new SuccessResponse({
       message: "Get order success",
       metadata: await orderService.GetOrder(
-        skip,
-        limit,
-        filter,
-        search,
-        status
+        skip, limit, filter, search,
+        status, paymentStatus, paymentMethod, userId,
+        fromDate, toDate, minPrice, maxPrice
       ),
     }).send(res);
   };

@@ -4,20 +4,17 @@ const { convertURL } = require("../utils");
 
 class ProductController {
   GetAll = async (req, res) => {
-    const { skip, limit, filter, search, price, genre, sex, age, type } =
-      req.query;
+    const {
+      skip, limit, filter, search, price,
+      genre, sex, age, type,
+      brand, madeIn, minDiscount, maxDiscount, inStock, sort,
+    } = req.query;
     new SuccessResponse({
       message: "Get all success",
       metadata: await productService.GetAll(
-        skip,
-        limit,
-        filter,
-        search,
-        price,
-        genre,
-        sex,
-        age,
-        type
+        skip, limit, filter, search, price,
+        genre, sex, age, type,
+        brand, madeIn, minDiscount, maxDiscount, inStock, sort
       ),
     }).send(res);
   };

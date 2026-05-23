@@ -19,19 +19,15 @@ class CouponService {
     const cart = await cartModel.findOne({ user: userId });
     if (!cart) throw new BadRequestError("Không tìm thấy giỏ hàng");
 
-    const allCoupons = await couponModel.find();
+    const cartTotal = cart.finalPrice ?? cart.totalPrice ?? 0;
 
-    const validCoupons = allCoupons.filter((coupon) => {
-      if (coupon.expiryDate < new Date()) return false;
-
-      if (coupon.usageLimit <= 0) return false;
-
-      if (cart.finalPrice < coupon.minOrderValue) return false;
-
-      return true;
+    const validCoupons = await couponModel.find({
+      expiryDate: { $gt: new Date() },
+      usageLimit: { $gt: 0 },
+      minOrderValue: { $lte: cartTotal },
     });
 
-    if (validCoupons.length == 0)
+    if (validCoupons.length === 0)
       throw new BadRequestError("Không có mã giảm giá hợp lệ");
 
     return validCoupons;

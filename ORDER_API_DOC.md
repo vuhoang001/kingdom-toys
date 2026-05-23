@@ -123,13 +123,38 @@ GET /order
 
 | Param | Kiểu | Mô tả |
 |-------|------|-------|
-| `skip` | integer | Bỏ qua n bản ghi (mặc định 0) |
-| `limit` | integer | Số bản ghi trả về (mặc định 30) |
-| `status` | string | Lọc theo trạng thái |
-| `search` | string | Tìm kiếm |
+| `skip` | integer | Bỏ qua n bản ghi (mặc định `0`) |
+| `limit` | integer | Số bản ghi trả về (mặc định `30`) |
+| `status` | string | Lọc theo trạng thái đơn hàng — xem enum `status` |
+| `paymentStatus` | string | Lọc theo trạng thái thanh toán — xem enum `paymentStatus` |
+| `paymentMethod` | string | Lọc theo phương thức thanh toán (`cod` / `zalo`) |
+| `userId` | string (ObjectId) | Lọc đơn hàng của một user cụ thể |
+| `fromDate` | string (ISO 8601) | Lọc đơn tạo từ ngày (bao gồm, tính từ `00:00:00`) |
+| `toDate` | string (ISO 8601) | Lọc đơn tạo đến ngày (bao gồm, tính đến `23:59:59`) |
+| `minPrice` | number | Lọc `finalPrice ≥ minPrice` |
+| `maxPrice` | number | Lọc `finalPrice ≤ maxPrice` |
+| `search` | string | Tìm kiếm full-text trong trường `status` |
+
+### Ví dụ
 
 ```
-GET /order?skip=0&limit=10&status=pending
+# Lọc theo trạng thái đơn + thanh toán
+GET /order?status=confirmed&paymentStatus=paid
+
+# Lọc đơn COD chưa thanh toán, phân trang
+GET /order?paymentMethod=cod&paymentStatus=pending&skip=0&limit=20
+
+# Lọc đơn của một user
+GET /order?userId=664abc000def000000000001
+
+# Lọc theo khoảng ngày
+GET /order?fromDate=2025-05-01&toDate=2025-05-31
+
+# Lọc theo khoảng giá (finalPrice)
+GET /order?minPrice=100000&maxPrice=500000
+
+# Kết hợp nhiều filter
+GET /order?status=pending&paymentMethod=zalo&fromDate=2025-05-01&minPrice=200000&limit=10
 ```
 
 ### Response

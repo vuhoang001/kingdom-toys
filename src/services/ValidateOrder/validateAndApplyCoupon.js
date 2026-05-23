@@ -24,7 +24,6 @@ const validateAndApplyCoupon = async (couponId, userId, totalPrice) => {
   let discountValue = 0;
 
   if (coupon.CouponType === "percent") {
-    console.log("percent");
     discountValue = (totalPrice * coupon.CouponValue) / 100;
   } else if (coupon.CouponType === "fixed") {
     discountValue = coupon.CouponValue;

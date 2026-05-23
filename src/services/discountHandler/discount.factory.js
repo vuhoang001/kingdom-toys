@@ -4,7 +4,6 @@ class PercentDiscount {
   constructor(discountValue) {
     this.discountValue = discountValue;
   }
-
   apply(cartTotal) {
     return cartTotal * (this.discountValue / 100);
   }
@@ -20,15 +19,16 @@ class FixedDiscount {
 }
 
 class DiscountFactory {
-  static getDiscountValue(cart, coupon) {
-    if (!coupon) return null;
+  static getDiscountValue(cartTotal, coupon) {
+    if (!coupon) return 0;
 
-    if (coupon.CouponType == DISCOUNTTYPE.PERCENT) {
-      return new PercentDiscount.apply(coupon.CouponValue);
-    } else if ((coupon.CouponType = DISCOUNTTYPE.FIXED)) {
-      return new FixedDiscount.apply(coupon.CouponValue);
+    if (coupon.CouponType === DISCOUNTTYPE.PERCENT) {
+      return new PercentDiscount(coupon.CouponValue).apply(cartTotal);
     }
-    return null;
+    if (coupon.CouponType === DISCOUNTTYPE.FIXED) {
+      return new FixedDiscount(coupon.CouponValue).apply(cartTotal);
+    }
+    return 0;
   }
 }
 

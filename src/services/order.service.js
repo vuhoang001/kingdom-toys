@@ -203,9 +203,37 @@ class OrderService {
     limit = 30,
     filter = null,
     search = null,
-    status = null
+    status = null,
+    paymentStatus = null,
+    paymentMethod = null,
+    userId = null,
+    fromDate = null,
+    toDate = null,
+    minPrice = null,
+    maxPrice = null
   ) => {
     filter = parseFilterString(filter, search, ["status"]);
+
+    if (status) filter.status = status;
+    if (paymentStatus) filter.paymentStatus = paymentStatus;
+    if (paymentMethod) filter.paymentMethod = paymentMethod;
+    if (userId) filter.user = userId;
+
+    if (fromDate || toDate) {
+      filter.createdAt = {};
+      if (fromDate) filter.createdAt.$gte = new Date(fromDate);
+      if (toDate) {
+        const end = new Date(toDate);
+        end.setHours(23, 59, 59, 999);
+        filter.createdAt.$lte = end;
+      }
+    }
+
+    if (minPrice || maxPrice) {
+      filter.finalPrice = {};
+      if (minPrice) filter.finalPrice.$gte = Number(minPrice);
+      if (maxPrice) filter.finalPrice.$lte = Number(maxPrice);
+    }
 
     const total = await orderModel.countDocuments(filter);
     const rawOrders = await orderModel
@@ -216,7 +244,9 @@ class OrderService {
         path: "user",
         select: "name email status thumbnail phone address",
       })
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(Number(skip))
+      .limit(Number(limit));
 
     const orders = rawOrders.map((order) => {
       const flatItems = order.items.map((item) => {
@@ -297,9 +327,13 @@ class OrderService {
       couponId = result.couponId;
       discountValue = result.discountValue;
       finalPrice = result.finalPrice;
-      const couponM = await couponModel.findById(couponId);
-      if (!couponM) throw new BadRequestError("Mã giảm giá không tồn tại");
-      couponM.usageLimit--;
+
+      // Atomic decrement — tránh race condition khi nhiều request dùng cùng coupon
+      const decremented = await couponModel.findOneAndUpdate(
+        { _id: couponId, usageLimit: { $gt: 0 } },
+        { $inc: { usageLimit: -1 } }
+      );
+      if (!decremented) throw new BadRequestError("Mã giảm giá đã hết lượt sử dụng");
     }
 
     const productMap = Object.fromEntries(
