@@ -6,6 +6,7 @@ const {
   AuthFailureError,
   BadRequestError,
 } = require("../response/error.response");
+const { Pagination } = require("../response/success.response");
 const bcrypt = require("bcrypt");
 
 class UserService {
@@ -83,6 +84,24 @@ class UserService {
         object: newAccount,
       }),
     };
+  };
+
+  GetUsers = async ({ skip = 0, limit = 20, search = null, tier = null } = {}) => {
+    const filter = {};
+    if (search) {
+      const regex = { $regex: search, $options: "i" };
+      filter.$or = [{ name: regex }, { email: regex }];
+    }
+    if (tier) filter.membershipTier = tier;
+
+    const total = await AccountModel.countDocuments(filter);
+    const users = await AccountModel.find(filter)
+      .select("-password")
+      .sort({ createdAt: -1 })
+      .skip(Number(skip))
+      .limit(Number(limit));
+
+    return new Pagination({ limit, skip, result: users, total });
   };
 
   GetUserById = async (id) => {

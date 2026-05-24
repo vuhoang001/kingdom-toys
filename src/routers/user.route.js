@@ -179,4 +179,6 @@ router.patch(
   AsyncHandle(userController.UpdatePassword)
 );
 
+router.get("/users", authentication, AsyncHandle(userController.GetUsers));
+
 module.exports = router;

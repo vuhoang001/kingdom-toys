@@ -1,5 +1,5 @@
 const { model, Schema, Types } = require("mongoose");
-const { ROLE } = require("../utils/enum");
+const { ROLE, MEMBERSHIP_TIER } = require("../utils/enum");
 
 const DOCUMENT_NAME = "Account";
 const COLLECTION_NAME = "Accounts";
@@ -44,6 +44,15 @@ const accountSchema = new Schema(
     ward: String,
     district: String,
     province: String,
+    membershipTier: {
+      type: String,
+      enum: Object.values(MEMBERSHIP_TIER),
+      default: MEMBERSHIP_TIER.BRONZE,
+    },
+    totalSpent: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,

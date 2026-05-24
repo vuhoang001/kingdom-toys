@@ -10,6 +10,7 @@ const PaymentHandler = require("./payments/PaymentFactor");
 const {
   validateAndApplyCoupon,
 } = require("./ValidateOrder/validateAndApplyCoupon");
+const { updateUserMembership } = require("./repos/user.repos");
 
 const {
   generateOrderItemFromCart,
@@ -65,6 +66,11 @@ class OrderService {
 
     holderOrder.status = status;
     await holderOrder.save();
+
+    if (status === ORDERSTATUS.DELIVERED) {
+      await updateUserMembership(holderOrder.user, holderOrder.finalPrice ?? 0);
+    }
+
     return {
       orderId: String(holderOrder._id),
       status: holderOrder.status,

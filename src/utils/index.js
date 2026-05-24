@@ -1,5 +1,6 @@
 const _ = require("lodash");
 const { Types } = require("mongoose");
+const { TIER_CONFIG, MEMBERSHIP_TIER } = require("./enum");
 
 const URL_IMG = `${process.env.URL_SERVER}/uploads`;
 
@@ -85,6 +86,13 @@ const parsePriceToFilter = (price) => {
   return orConditions.length > 1 ? { $or: orConditions } : orConditions[0];
 };
 
+const getTierFromSpent = (totalSpent = 0) => {
+  for (const config of TIER_CONFIG) {
+    if (totalSpent >= config.minSpent) return config.tier;
+  }
+  return MEMBERSHIP_TIER.BRONZE;
+};
+
 module.exports = {
   parsePriceToFilter,
   parseFilterString,
@@ -94,4 +102,5 @@ module.exports = {
   cleanObject,
   convertToObjectIdMongose,
   convertURL,
+  getTierFromSpent,
 };

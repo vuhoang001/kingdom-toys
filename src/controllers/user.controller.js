@@ -54,6 +54,14 @@ class UserController {
       metadata: await userService.UpdatePassword(req.body, user.userId),
     }).send(res);
   };
+
+  GetUsers = async (req, res) => {
+    const { skip, limit, search, tier } = req.query;
+    new SuccessResponse({
+      message: "get users success",
+      metadata: await userService.GetUsers({ skip, limit, search, tier }),
+    }).send(res);
+  };
 }
 
 module.exports = new UserController();
