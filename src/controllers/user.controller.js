@@ -62,6 +62,13 @@ class UserController {
       metadata: await userService.GetUsers({ skip, limit, search, tier }),
     }).send(res);
   };
+
+  GetUserById = async (req, res) => {
+    new SuccessResponse({
+      message: "get user success",
+      metadata: await userService.GetUserById(req.params.id),
+    }).send(res);
+  };
 }
 
 module.exports = new UserController();

@@ -20,4 +20,5 @@ router.use("/", require("./author.route.js"));
 
 router.use("/", require("./report.route.js"));
 router.use("/", require("./async.route.js"));
+router.use("/", require("./chatbot.route.js"));
 module.exports = router;

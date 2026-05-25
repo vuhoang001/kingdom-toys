@@ -105,7 +105,7 @@ class UserService {
   };
 
   GetUserById = async (id) => {
-    return await AccountModel.findOne({ _id: convertToObjectIdMongose(id) });
+    return await AccountModel.findOne({ _id: convertToObjectIdMongose(id) }).select("-password");
   };
 
   Update = async (id, data) => {

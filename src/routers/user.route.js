@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const userController = require("../controllers/user.controller");
 const { AsyncHandle } = require("../helpers/AsyncHandle");
-const { authentication } = require("../helpers/auth");
+const { authentication, requireAdmin } = require("../helpers/auth");
 const { uploadDisk } = require("../configs/multer.config");
 
 /**
@@ -179,6 +179,8 @@ router.patch(
   AsyncHandle(userController.UpdatePassword)
 );
 
-router.get("/users", authentication, AsyncHandle(userController.GetUsers));
+router.get("/users", authentication, requireAdmin, AsyncHandle(userController.GetUsers));
+
+router.get("/users/:id", authentication, requireAdmin, AsyncHandle(userController.GetUserById));
 
 module.exports = router;

@@ -74,8 +74,21 @@ class NotificationService {
       notificationModel.countDocuments({ user: userId, isRead: false }),
     ]);
 
+    const result = items.map((item) => ({
+      ...item,
+      data: {
+        ...item.data,
+        ...(item.data?.status
+          ? { statusLabel: convertOrderStatus(item.data.status) }
+          : {}),
+        ...(item.data?.paymentStatus
+          ? { paymentStatusLabel: convertPaymentStatus(item.data.paymentStatus) }
+          : {}),
+      },
+    }));
+
     return {
-      result: items,
+      result,
       skip: safeSkip,
       limit: safeLimit,
       total,

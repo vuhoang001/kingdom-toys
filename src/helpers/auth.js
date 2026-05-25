@@ -7,6 +7,7 @@ const HEADER = {
   REFRESHTOKEN: "x-rtoken-id",
 };
 const { GetUserById } = require("../services/repos/user.repos");
+const { ROLE } = require("../utils/enum");
 
 const createTokenPair = async (payload) => {
   try {
@@ -56,4 +57,11 @@ const authentication = AsyncHandle(async (req, res, next) => {
   next();
 });
 
-module.exports = { createTokenPair, authentication };
+const requireAdmin = AsyncHandle(async (req, res, next) => {
+  const user = await GetUserById(req.user.userId);
+  if (!user || user.role !== ROLE.ADMIN)
+    throw new AuthFailureError("Forbidden: admin only");
+  next();
+});
+
+module.exports = { createTokenPair, authentication, requireAdmin };

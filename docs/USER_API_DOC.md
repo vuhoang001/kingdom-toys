@@ -37,7 +37,8 @@ Hạng thẻ được tính tự động dựa trên **tổng tiền của các 
 | `POST` | `/register` | — | Đăng ký |
 | `POST` | `/handleRF` | 🔒 | Làm mới access token |
 | `GET` | `/get-me` | 🔒 | Thông tin cá nhân |
-| `GET` | `/users` | 🔒 | Danh sách user (admin) |
+| `GET` | `/users` | 🔒 Admin | Danh sách user |
+| `GET` | `/users/:id` | 🔒 Admin | Chi tiết một user |
 | `PATCH` | `/update-me` | 🔒 | Cập nhật hồ sơ |
 | `PATCH` | `/update-password` | 🔒 | Đổi mật khẩu |
 
@@ -256,7 +257,56 @@ GET /users?skip=0&limit=20&search=nguyen
 
 ---
 
-## 6. Cập nhật hồ sơ
+## 6. Chi tiết một user (admin)
+
+```
+GET /users/:id
+```
+
+> Chỉ admin (`role = A`) mới được gọi endpoint này. Client sẽ nhận lỗi 401.
+
+### Path parameter
+
+| Param | Mô tả |
+|-------|-------|
+| `id` | `_id` của user cần xem |
+
+### Response
+
+```json
+{
+  "message": "get user success",
+  "status": 200,
+  "metadata": {
+    "_id": "664abc123def456789012345",
+    "name": "Nguyễn Văn A",
+    "email": "user@gmail.com",
+    "status": "active",
+    "thumbnail": "http://localhost:3000/uploads/avatar.jpg",
+    "phone": "0901234567",
+    "addressLine": "123 Lê Lợi",
+    "ward": "Phường Bến Nghé",
+    "district": "Quận 1",
+    "province": "TP. Hồ Chí Minh",
+    "role": "C",
+    "membershipTier": "silver",
+    "totalSpent": 3200000,
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "updatedAt": "2025-05-24T00:00:00.000Z"
+  }
+}
+```
+
+### Error responses
+
+```json
+{ "status": 401, "message": "Forbidden: admin only" }
+{ "status": 404, "message": "..." }
+```
+
+---
+
+## 7. Cập nhật hồ sơ
 
 ```
 PATCH /update-me
@@ -295,7 +345,7 @@ Content-Type: multipart/form-data
 
 ---
 
-## 7. Đổi mật khẩu
+## 8. Đổi mật khẩu
 
 ```
 PATCH /update-password
