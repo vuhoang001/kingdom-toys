@@ -27,20 +27,24 @@ class ChatService {
 
   /**
    * Admin lấy danh sách tất cả conversation, sắp xếp theo tin nhắn mới nhất.
+   * Hỗ trợ filter theo status: "open" | "closed"
    */
-  getConversations = async ({ skip = 0, limit = 20 } = {}) => {
+  getConversations = async ({ skip = 0, limit = 20, status } = {}) => {
     const safeSkip = Math.max(Number(skip) || 0, 0);
     const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
 
+    const filter = {};
+    if (status === "open" || status === "closed") filter.status = status;
+
     const [items, total] = await Promise.all([
       conversationModel
-        .find()
+        .find(filter)
         .populate("userId", "name email thumbnail")
         .sort({ lastMessageAt: -1, createdAt: -1 })
         .skip(safeSkip)
         .limit(safeLimit)
         .lean(),
-      conversationModel.countDocuments(),
+      conversationModel.countDocuments(filter),
     ]);
 
     return {
@@ -154,6 +158,46 @@ class ChatService {
     });
 
     return { success: true };
+  };
+
+  /**
+   * Admin đóng hoặc mở lại conversation.
+   */
+  updateConversationStatus = async (conversationId, status) => {
+    if (!["open", "closed"].includes(status)) {
+      throw new BadRequestError("Trạng thái không hợp lệ (open | closed)");
+    }
+
+    const conversation = await conversationModel
+      .findByIdAndUpdate(conversationId, { $set: { status } }, { new: true })
+      .populate("userId", "name email thumbnail")
+      .lean();
+
+    if (!conversation) throw new NotFoundError("Không tìm thấy cuộc trò chuyện");
+    return conversation;
+  };
+
+  /**
+   * Thống kê unread cho admin dashboard.
+   * Trả về: tổng conversation và số conversation có tin chưa đọc.
+   */
+  getAdminUnreadStats = async () => {
+    const [total, withUnread] = await Promise.all([
+      conversationModel.countDocuments(),
+      conversationModel.countDocuments({ unreadByAdmin: { $gt: 0 } }),
+    ]);
+    return { total, withUnread };
+  };
+
+  /**
+   * Số tin nhắn chưa đọc của user (admin gửi mà user chưa xem).
+   */
+  getUserUnreadCount = async (userId) => {
+    const conversation = await conversationModel
+      .findOne({ userId })
+      .select("unreadByUser")
+      .lean();
+    return { unreadByUser: conversation?.unreadByUser ?? 0 };
   };
 
   /**

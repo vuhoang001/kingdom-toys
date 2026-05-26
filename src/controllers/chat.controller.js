@@ -1,6 +1,7 @@
 const chatService = require("../services/chat.service");
 const { SuccessResponse } = require("../response/success.response");
 const { ROLE } = require("../utils/enum");
+const { emitConversationStatusChanged } = require("../socket/socket");
 
 class ChatController {
   /** User: lấy hoặc tạo conversation của mình với admin */
@@ -12,12 +13,12 @@ class ChatController {
     }).send(res);
   };
 
-  /** Admin: lấy danh sách tất cả conversation */
+  /** Admin: lấy danh sách tất cả conversation (có thể filter theo status) */
   getConversations = async (req, res) => {
-    const { skip, limit } = req.query;
+    const { skip, limit, status } = req.query;
     new SuccessResponse({
       message: "Lấy danh sách cuộc trò chuyện thành công",
-      metadata: await chatService.getConversations({ skip, limit }),
+      metadata: await chatService.getConversations({ skip, limit, status }),
     }).send(res);
   };
 
@@ -52,6 +53,35 @@ class ChatController {
         senderRole,
         content,
       }),
+    }).send(res);
+  };
+
+  /** Admin: đóng hoặc mở lại conversation */
+  updateConversationStatus = async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const conversation = await chatService.updateConversationStatus(id, status);
+    emitConversationStatusChanged(id, String(conversation.userId._id), status);
+
+    new SuccessResponse({
+      message: status === "closed" ? "Đã đóng cuộc trò chuyện" : "Đã mở lại cuộc trò chuyện",
+      metadata: conversation,
+    }).send(res);
+  };
+
+  /** Lấy số tin nhắn chưa đọc (admin: stats tổng; user: số unread của họ) */
+  getUnreadCount = async (req, res) => {
+    const { userId, role } = req.user;
+
+    const metadata =
+      role === ROLE.ADMIN
+        ? await chatService.getAdminUnreadStats()
+        : await chatService.getUserUnreadCount(userId);
+
+    new SuccessResponse({
+      message: "Lấy số tin nhắn chưa đọc thành công",
+      metadata,
     }).send(res);
   };
 

@@ -53,10 +53,37 @@ Base URL: `/chat`
 
 | Method | Endpoint | Mô tả |
 |---|---|---|
-| `GET` | `/chat/conversations` | Danh sách tất cả conversation |
+| `GET` | `/chat/conversations` | Danh sách tất cả conversation (hỗ trợ `?status=open\|closed`) |
 | `GET` | `/chat/conversations/:id/messages` | Lấy lịch sử tin nhắn |
 | `POST` | `/chat/conversations/:id/messages` | Gửi tin nhắn (REST fallback) |
 | `PATCH` | `/chat/conversations/:id/read` | Đánh dấu đã đọc |
+| `PATCH` | `/chat/conversations/:id/status` | Đóng hoặc mở lại conversation |
+
+### Chung (user & admin)
+
+| Method | Endpoint | Mô tả |
+|---|---|---|
+| `GET` | `/chat/unread-count` | Lấy số tin nhắn chưa đọc |
+
+#### `GET /chat/unread-count`
+
+- **Admin:** trả về `{ total, withUnread }` — tổng conversation và số conversation có tin chưa đọc.
+- **User:** trả về `{ unreadByUser }` — số tin từ admin mà user chưa xem.
+
+Dùng để hiển thị badge thông báo trên sidebar/navbar.
+
+#### `GET /chat/conversations?status=open|closed`
+
+Lọc danh sách theo trạng thái. Bỏ qua param để lấy tất cả.
+
+#### `PATCH /chat/conversations/:id/status`
+
+```json
+// Request body
+{ "status": "closed" }   // hoặc "open"
+```
+
+Khi thay đổi, server tự emit socket event `chat:status_changed` tới user liên quan (xem bên dưới).
 
 Xem chi tiết request/response tại Swagger UI: `GET /api-docs`
 
@@ -163,6 +190,17 @@ Phía đối diện đã đọc tin nhắn.
 socket.on("chat:read", ({ conversationId, readBy }) => { ... });
 ```
 
+#### `chat:status_changed`
+
+Admin đóng hoặc mở lại conversation. Emit tới conversation room và `user_{userId}` room.
+
+```js
+socket.on("chat:status_changed", ({ conversationId, status }) => {
+  // status: "open" | "closed"
+  // Nếu closed → hiện thông báo "Cuộc trò chuyện đã được đóng"
+});
+```
+
 ---
 
 ## Luồng tích hợp mẫu
@@ -170,38 +208,58 @@ socket.on("chat:read", ({ conversationId, readBy }) => { ... });
 ### Phía User
 
 ```js
-// 1. Lấy conversation
+// 1. Badge: lấy số tin chưa đọc từ admin
+const { metadata: badge } = await fetch("/chat/unread-count", { headers: authHeaders }).then(r => r.json());
+// badge: { unreadByUser: 3 }
+
+// 2. Lấy conversation
 const { metadata: conv } = await fetch("/chat/conversation", { headers: authHeaders }).then(r => r.json());
 
-// 2. Join conversation room qua socket
+// 3. Join conversation room qua socket
 socket.emit("chat:join", { conversationId: conv._id });
 
-// 3. Lắng nghe tin nhắn đến
+// 4. Lắng nghe tin nhắn đến
 socket.on("chat:message", ({ message }) => renderMessage(message));
 
-// 4. Gửi tin nhắn
+// 5. Lắng nghe khi admin đóng/mở conversation
+socket.on("chat:status_changed", ({ status }) => {
+  if (status === "closed") showNotice("Cuộc trò chuyện đã được đóng");
+});
+
+// 6. Gửi tin nhắn
 socket.emit("chat:send", { conversationId: conv._id, content: "Xin chào!" });
 
-// 5. Đánh dấu đọc khi mở chat
+// 7. Đánh dấu đọc khi mở chat
 socket.emit("chat:read", { conversationId: conv._id });
 ```
 
 ### Phía Admin
 
 ```js
-// 1. Lấy danh sách conversations
-const { metadata } = await fetch("/chat/conversations", { headers: authHeaders }).then(r => r.json());
+// 1. Badge: lấy số conversation có tin chưa đọc
+const { metadata: stats } = await fetch("/chat/unread-count", { headers: authHeaders }).then(r => r.json());
+// stats: { total: 42, withUnread: 7 }
 
-// 2. Lắng nghe tin nhắn mới (admin đã ở trong `admins` room, không cần join thêm)
+// 2. Lấy danh sách conversations (lọc theo status nếu cần)
+const { metadata } = await fetch("/chat/conversations?status=open", { headers: authHeaders }).then(r => r.json());
+
+// 3. Lắng nghe tin nhắn mới (admin đã ở trong `admins` room, không cần join thêm)
 socket.on("chat:message", ({ conversationId, message }) => {
   // cập nhật UI
 });
 
-// 3. Khi mở chat với user cụ thể → join conversation room để nhận đủ events
+// 4. Khi mở chat với user cụ thể → join conversation room để nhận đủ events
 socket.emit("chat:join", { conversationId: "664abc..." });
 
-// 4. Gửi trả lời
+// 5. Gửi trả lời
 socket.emit("chat:send", { conversationId: "664abc...", content: "Chào bạn!" });
+
+// 6. Đóng conversation khi xong
+await fetch("/chat/conversations/664abc.../status", {
+  method: "PATCH",
+  headers: { ...authHeaders, "Content-Type": "application/json" },
+  body: JSON.stringify({ status: "closed" }),
+});
 ```
 
 ---

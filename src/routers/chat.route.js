@@ -154,6 +154,12 @@ router.get(
  *     parameters:
  *       - $ref: '#/components/parameters/Skip'
  *       - $ref: '#/components/parameters/Limit'
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [open, closed]
+ *         description: Lọc theo trạng thái conversation (bỏ qua để lấy tất cả)
  *     responses:
  *       200:
  *         description: Thành công
@@ -322,6 +328,104 @@ router.patch(
   "/chat/conversations/:id/read",
   authentication,
   AsyncHandle(chatController.markAsRead)
+);
+
+/**
+ * @swagger
+ * /chat/conversations/{id}/status:
+ *   patch:
+ *     summary: "[Admin] Đóng hoặc mở lại conversation"
+ *     description: >
+ *       Admin đóng conversation (status: closed) để kết thúc hỗ trợ,
+ *       hoặc mở lại (status: open). Khi thay đổi, server emit socket event
+ *       `chat:status_changed` tới conversation room và user room tương ứng.
+ *     tags: [Chat]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID của conversation
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [open, closed]
+ *                 example: closed
+ *     responses:
+ *       200:
+ *         description: Thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 metadata:
+ *                   $ref: '#/components/schemas/Conversation'
+ */
+router.patch(
+  "/chat/conversations/:id/status",
+  authentication,
+  requireAdmin,
+  AsyncHandle(chatController.updateConversationStatus)
+);
+
+/**
+ * @swagger
+ * /chat/unread-count:
+ *   get:
+ *     summary: Lấy số tin nhắn chưa đọc
+ *     description: >
+ *       **Admin:** trả về `{ total, withUnread }` — tổng số conversation và số conversation có tin chưa đọc.
+ *
+ *       **User:** trả về `{ unreadByUser }` — số tin nhắn từ admin mà user chưa đọc.
+ *     tags: [Chat]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 metadata:
+ *                   oneOf:
+ *                     - type: object
+ *                       description: Admin response
+ *                       properties:
+ *                         total:
+ *                           type: integer
+ *                           example: 42
+ *                         withUnread:
+ *                           type: integer
+ *                           example: 7
+ *                     - type: object
+ *                       description: User response
+ *                       properties:
+ *                         unreadByUser:
+ *                           type: integer
+ *                           example: 3
+ */
+router.get(
+  "/chat/unread-count",
+  authentication,
+  AsyncHandle(chatController.getUnreadCount)
 );
 
 module.exports = router;

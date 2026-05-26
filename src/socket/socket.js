@@ -210,6 +210,15 @@ function emitOrderUpdatedToUser(userId, payload) {
   ioInstance.to(userRoom(userId)).emit("order_updated", payload);
 }
 
+function emitConversationStatusChanged(conversationId, userId, status) {
+  if (!ioInstance) return;
+  const payload = { conversationId, status };
+  ioInstance.to(conversationRoom(conversationId)).emit("chat:status_changed", payload);
+  if (userId != null) {
+    ioInstance.to(userRoom(String(userId))).emit("chat:status_changed", payload);
+  }
+}
+
 function getIo() {
   return ioInstance;
 }
@@ -217,6 +226,7 @@ function getIo() {
 module.exports = {
   initSocket,
   emitOrderUpdatedToUser,
+  emitConversationStatusChanged,
   getIo,
   userRoom,
   conversationRoom,
