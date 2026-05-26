@@ -42,6 +42,7 @@ class UserService {
     const tokens = await createTokenPair({
       userId: foundAccount._id,
       email: foundAccount.email,
+      role: foundAccount.role,
     });
 
     if (!tokens) throw new BadRequestError("Không thể tạo Tokens");
@@ -164,6 +165,7 @@ class UserService {
     const tokens = await createTokenPair({
       userId: foundUser._id,
       email: foundUser.email,
+      role: foundUser.role,
     });
 
     if (!tokens) throw new AuthFailureError("please relogin");
