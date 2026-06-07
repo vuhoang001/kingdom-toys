@@ -65,6 +65,15 @@ class OrderService {
     }
 
     holderOrder.status = status;
+
+    // COD: giao hàng thành công = khách đã thanh toán tiền mặt
+    if (
+      status === ORDERSTATUS.DELIVERED &&
+      holderOrder.paymentMethod === PAYMENT_METHOD.COD
+    ) {
+      holderOrder.paymentStatus = PAYMENT_STATUS.PAID;
+    }
+
     await holderOrder.save();
 
     if (status === ORDERSTATUS.DELIVERED) {

@@ -46,11 +46,11 @@ class PaymentHandler {
 
 class CODPayment extends PaymentHandler {
   async handler(orderInput, userId) {
-    this.processOrder(orderInput, userId);
+    await this.processOrder(orderInput, userId);
     const order = await orderModel.findOne({ _id: orderInput._id });
     if (!order) throw new BadRequestError("Order not found");
     order.status = ORDERSTATUS.PENDING;
-    await cartModel.deleteOne({ _id: userId });
+    await cartModel.deleteOne({ user: userId });
     await order.save();
     return order;
   }
